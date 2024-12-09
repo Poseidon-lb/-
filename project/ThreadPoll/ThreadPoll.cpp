@@ -44,7 +44,7 @@ void ThreadPool::push(std::function<void(void)> task) {
 void ThreadPool::manager(void) {
     while (!_stop.load()) {
         // 搁三秒判断一次
-        std::this_thread::sleep_for(std::chrono::seconds(3));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
         int idel = _idleThread.load();
         int cur = _curThread.load();
         // 空闲线程超过一半，销毁两个线程。销毁的是被阻塞的线程
@@ -88,6 +88,7 @@ void ThreadPool::woker() {
                     _exIds.emplace_back(std::this_thread::get_id());
                     _curThread--;
                     _exitThread--;
+                    _idleThread--;
                     return;
                 } 
             }
@@ -104,6 +105,7 @@ ThreadPool::~ThreadPool() {
     _stop = true;
     _cond.notify_all();
     for (auto &it : _workers) {
+        // 判断对象是否可连接，没有join或者线程分离过
         if (it.second.joinable()) {
             it.second.join();
         }

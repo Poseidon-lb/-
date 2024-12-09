@@ -12,7 +12,7 @@
 class ThreadPool {
 public:
     // 默认最大线程数量为电脑线程可行数，通过API函数获取
-    ThreadPool(int min = 1, int max = std::thread::hardware_concurrency());
+    ThreadPool(int min = 2, int max = std::thread::hardware_concurrency());
     ~ThreadPool();
     // 添加任务
     void push(std::function<void(void)> task);
