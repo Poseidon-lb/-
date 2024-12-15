@@ -22,7 +22,6 @@ _stop(false), _idleThread(min), _curThread(min) {
        // 退出容器才销毁
     }
 }
-
 void ThreadPool::push(std::function<void(void)> task) {
     /*
         管理互斥锁类
@@ -116,9 +115,10 @@ ThreadPool::~ThreadPool() {
     delete _managr;
 }
 
-void add(int x, int y) {
-    std::cout << x + y << "\n";
+int add(int x, int y) {
+    int sum = x + y;
     std::this_thread::sleep_for(std::chrono::seconds(2));
+    return sum;
 }
 
 int main() {
@@ -126,7 +126,7 @@ int main() {
 
     for (int i = 0; i < 10; i ++) {
         auto obj = std::bind(add, i, i + 1);
-        pool.push(obj);
+        pool.pushTask<>(obj);
     }
     
     getchar();
