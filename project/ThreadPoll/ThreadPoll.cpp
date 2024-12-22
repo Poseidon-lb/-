@@ -22,23 +22,6 @@ _stop(false), _idleThread(min), _curThread(min) {
        // 退出容器才销毁
     }
 }
-void ThreadPool::push(std::function<void(void)> task) {
-    /*
-        管理互斥锁类
-        会自动对互斥锁加锁和解锁
-        当locker对象被析构时会自动解锁
-    */ 
-    // 添加作用域限制locker，让locker提前析构，以解锁，让cond去唤醒消费者线程工作
-    {
-        std::lock_guard<std::mutex> locker(_taskMutex);
-        _taskQueue.emplace(task);
-    }
-    /*
-        使用emplace在()里面构造对象时效率高，已经构造出来了再传递和push效率一样
-        因为此时emplace也是调用的拷贝构造
-    */
-    _cond.notify_one();
-}
 
 void ThreadPool::manager(void) {
     while (!_stop.load()) {
@@ -91,7 +74,7 @@ void ThreadPool::woker() {
                     return;
                 } 
             }
-            task = move(_taskQueue.front());  // 转成右值，移动构造
+            task = move(_taskQueue.front());
             _taskQueue.pop();
         }
         _idleThread--;
@@ -117,6 +100,7 @@ ThreadPool::~ThreadPool() {
 
 int add(int x, int y) {
     int sum = x + y;
+    std::cout << x + y << "\n";
     std::this_thread::sleep_for(std::chrono::seconds(2));
     return sum;
 }
@@ -125,8 +109,7 @@ int main() {
     ThreadPool pool;
 
     for (int i = 0; i < 10; i ++) {
-        auto obj = std::bind(add, i, i + 1);
-        pool.pushTask<>(obj);
+        pool.pushTask(add, i, i + 1);
     }
     
     getchar();

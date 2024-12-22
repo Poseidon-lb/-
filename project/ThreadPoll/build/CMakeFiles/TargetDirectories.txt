@@ -1,0 +1,3 @@
+/home/lb/store/project/ThreadPoll/build/CMakeFiles/threadPoll.dir
+/home/lb/store/project/ThreadPoll/build/CMakeFiles/edit_cache.dir
+/home/lb/store/project/ThreadPoll/build/CMakeFiles/rebuild_cache.dir

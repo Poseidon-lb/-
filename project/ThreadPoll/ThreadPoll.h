@@ -4,6 +4,7 @@
 #include <thread>
 #include <vector>
 #include <atomic>
+#include <memory>
 #include <queue>
 #include <mutex>
 #include <future>
@@ -15,28 +16,24 @@ public:
     // 默认最大线程数量为电脑线程可行数，通过API函数获取
     ThreadPool(int min = 2, int max = std::thread::hardware_concurrency());
     ~ThreadPool();
-    // 添加任务
-    void push(std::function<void(void)> task);
-    
-    template<class T, class... Args> 
-    std::future<class std::result_of<T(Args...)>::type> pushTask(T && t, Args && ... args) {
-        // 模板函数的声明和实现体要写在同一个头文件中  
-        /*
-        管理互斥锁类
-        会自动对互斥锁加锁和解锁
-        当locker对象被析构时会自动解锁
-        */ 
-        // 添加作用域限制locker，让locker提前析构，以解锁，让cond去唤醒消费者线程工作
+
+    template<class F, class...Args>
+    auto pushTask(F && f, Args && ...args) -> std::future<typename std::result_of<F(Args...)>::type> {
+        using reType = typename std::result_of<F(Args...)>::type;
+        // std::shared_ptr<std::packaged_task<reType()>>
+        auto task_ptr = std::make_shared<std::packaged_task<reType()>> (
+            std::bind(std::forward<F>(f), std::forward<Args>(args)...)
+        );  
         {
-            std::lock_guard<std::mutex> locker(_taskMutex);
-            _taskQueue.emplace(task);
+            std::unique_lock<std::mutex> locker(_taskMutex);
+            _taskQueue.push([task_ptr]() {
+                (*task_ptr)();      
+            });
         }
-        /*
-            使用emplace在()里面构造对象时效率高，已经构造出来了再传递和push效率一样
-            因为此时emplace也是调用的拷贝构造
-        */
-        _cond.notify_one();    
+        _cond.notify_one();
+        return task_ptr->get_future();
     }
+
     template<class T> void f(T && t) {}
 
 private:
