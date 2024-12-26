@@ -1,0 +1,34 @@
+#include <memory>
+
+// 递归构造构成使用cppinsights工具查看
+
+namespace lb {
+    template<class...Args>
+    struct tuple;
+
+    template<>
+    struct tuple<> {
+        constexpr tuple() noexcept {}
+    };
+
+    template<class T, class...Args>
+    struct tuple<T, Args...> {
+    private:
+        // 对象创建时才会存在（调用构造函数）
+        T value;                // int value
+        tuple<Args...> tail;    //  tuple<int, int> tail
+    public:
+        constexpr tuple() = default;
+        constexpr tuple(T && t, Args && ...args)
+        : value(std::forward<T>(t)), tail(std::forward<Args>(args)...){}    // 初始化成员，递归构造模板
+
+        tuple(const tuple& other) = default;
+        tuple& operator=(const tuple& other) = default;
+        tuple(tuple && other) noexcept = default;
+        tuple& operator=(tuple && other) noexcept = default;
+    };
+}
+
+int main() {
+    lb::tuple<int, int, int> t(1, 2, 3);
+}
